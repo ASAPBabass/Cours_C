@@ -41,7 +41,7 @@ clean:
 #
 # Pour faire l'archive de remise
 #
-TGZ_FILES :=  *.c *.h ?akefile cr.pdf
+TGZ_FILES :=  *.c *.h ?akefile cr.pdf *.txt
 TDM_DIR := TDM$(TDM_NUMERO)
 
 rendu :
