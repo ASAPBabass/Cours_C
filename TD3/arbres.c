@@ -44,7 +44,7 @@ struct arbre_struct {
 static noeud noeud_creer(void* val, void(*copier)(void *val, void** pt))
 {
 	noeud n=malloc(sizeof(struct noeud_struct));
-	copier(val,n);
+	copier(val,&(n->val));
 	//n->f_d=malloc(sizeof(struct noeud_struct));
 	//n->f_g=malloc(sizeof(struct noeud_struct));
 	n->f_g=NULL;
@@ -98,11 +98,28 @@ static void noeud_detruire_simple(noeud* const n_pt, void(* detruire)(void** pt 
 
 	}*/
 	if(NULL!=((*n_pt)->f_d)){
-		((*n_pt)->val)=((*n_pt)->f_d->val);
-		noeud_detruire_simple(&((*n_pt)->f_d),detruire);
-
-	}else if(NULL!=((*n_pt)->f_g)){		
+		if(NULL==((*n_pt)->f_d)->f_g){
+			((*n_pt)->val)=((*n_pt)->f_d->val);
+			noeud_detruire_simple(&((*n_pt)->f_d),detruire);
+		}else{
+			noeud* temp = &((*n_pt)->f_g);
+			while(NULL!=(*temp)->f_g){
+				*temp = (*temp)->f_g;
+			}
+			(*n_pt)->val = (*temp)->val;
+			detruire(temp);
+		//noeud_detruire_simple(&((*n_pt)->f_g),detruire);
+		}
+	}else if(NULL!=((*n_pt)->f_g)){
+		noeud* x=&((*n_pt)->f_g);		
 		*n_pt=((*n_pt)->f_g);
+	/*	noeud * temp = &((*n_pt)->f_d);
+		while((*temp)->f_g!=NULL){
+			(temp) = &((*temp)->f_g);
+		}
+		(*n_pt)->val = (*temp)->val;
+		noeud_detruire_simple(&((*n_pt)->f_d),detruire);
+	*/
 	}else{
 		detruire(n_pt);
 	}

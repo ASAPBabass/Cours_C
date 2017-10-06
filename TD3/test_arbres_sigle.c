@@ -49,7 +49,14 @@ struct sigle_struct {
  * \return un sigle selon la définition de la structure
  */
 sigle sigle_creer(char* court, char* details) {
-  return NULL;
+  sigle s = malloc(sizeof(struct sigle_struct));
+  //s->court[T_SIGLE];
+  // s->details[T_DETAILS];
+  s->court = malloc(sizeof(char)*T_SIGLE);
+  s->details = malloc(sizeof(char)*T_DETAILS);
+  strcpy(s->court,court);
+  strcpy(s->details,details);
+  return s;
 }
 
 
@@ -58,6 +65,12 @@ sigle sigle_creer(char* court, char* details) {
  * \param s sigle à détruire ((*s) mis à NULL à la fin)
  */
 void sigle_detruire(sigle* s) {
+  assert(NULL != s);
+  if(*s != NULL){
+    free(*s);
+    (*s)= NULL;
+  }
+
 }
 
 /*! 
@@ -66,6 +79,7 @@ void sigle_detruire(sigle* s) {
  * \param f le flux de sortie.
  */
 void sigle_afficher(sigle  s, FILE* f) {
+  fprintf(f, "(%s , %s)\n", s->court, s->details);
 }
 
 
@@ -76,6 +90,11 @@ void sigle_afficher(sigle  s, FILE* f) {
  * \param pt le lieu de la copie.
  */
 void copier_sigle(void* val, void** pt) {
+  assert(NULL != val);
+  assert(NULL != pt);
+  *pt =(sigle*)malloc(sizeof(struct sigle_struct));
+  assert(NULL != *pt );
+  memcpy(*pt, val, sizeof(struct sigle_struct));
 }
 
 
@@ -87,6 +106,9 @@ void copier_sigle(void* val, void** pt) {
  */
 void afficher_sigle(void *val, FILE* f)
 {
+  assert(NULL != val);
+  //sigle s = (sigle*) val;
+  sigle_afficher((sigle*) val,f); 
 }
 
 /*! 
@@ -96,6 +118,9 @@ void afficher_sigle(void *val, FILE* f)
  */
 void detruire_sigle(void** pt)
 {
+  assert(NULL != pt);
+  sigle s = (sigle*) pt;
+  sigle_detruire(*pt); 
 }
 
 
@@ -107,7 +132,9 @@ void detruire_sigle(void** pt)
  * \return >=1 si val1> val2, ==0 si val1=val2, <=-1 si val1>val2
  */
 int comparer_sigle(void* val1, void* val2) {
-  return 0;
+  assert(NULL != val1);
+  assert(NULL != val2);
+  return strcmp((char*) val1,(char*) val2);
 }
 
 
@@ -121,19 +148,21 @@ int main(void) {
   
   fgets(s, T_SIGLE, f_in); 
   while(! feof(f_in)) {
+    //fgets(s, T_SIGLE, f_in); 
     s[strlen(s)-1] = '\0'; 
     fgets(d, T_DETAILS, f_in); 
     d[strlen(d)-1] = '\0';
     sigle a1 = sigle_creer(s, d);
-    arbre_insertion(abr, a1); 
+    arbre_insertion(abr,(void*) a1); 
     sigle_detruire(&a1); 
     fgets(s, T_SIGLE, f_in); 
   } 
   
   fprintf(f_out , "Arbre des sigles\n"); 
   arbre_afficher_infixe(abr , f_out , afficher_sigle); 
-  fprintf(f_out , "\n"); 
   
+  fprintf(f_out , "\n"); 
+ /*
   fprintf(f_out , "recherche de "); 
   sigle ref = sigle_creer("OTAN" , ""); 
   afficher_sigle(ref , f_out); 
@@ -147,11 +176,11 @@ int main(void) {
   arbre_supprimer(abr , ref); 
   fprintf(f_out , "Le résultat de la suppression\n"); 
   arbre_afficher_infixe(abr , f_out , afficher_sigle); 
-  fprintf(f_out , "\n"); 
+  fprintf(f_out , "\n"); */
   int taille = arbre_taille(abr); 
   fprintf(f_out , "taille = %d \n" , taille); 
   
-  sigle_detruire(&ref); 
+  //sigle_detruire(&ref); 
 
   arbre_detruire(&abr); 
  
