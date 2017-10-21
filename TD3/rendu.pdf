@@ -1,7 +1,0 @@
-FOURNIER Bastien
-ABDOULAYE Hamat
-
-
-(2) Faire appel à pointeur nous permet d'avoir accès à la fonction "afficher" scpécialement conçu pour afficher la structure utilisé ici des int, ce qui permet au programme d'être générique.
-
-(5) \pre indique une précondition avant de faire appel à la fonction
