@@ -1,58 +1,63 @@
 #ifndef LISTE_SIMPLEMENT_CHAINEE_H
 #define LISTE_SIMPLEMENT_CHAINEE_H
 
+#include <stdbool.h>
+#include <stdio.h>
 
-typedef struct maillon * maillon;
+/*! \file listes_generiques.h
+ * \brief Module liste générique.
+ *
+ * La structure est très similaire à celle pour les entiers
+ * L'objectif est de rajouter des fonctions dans cette structure
+ * afin de construire une liste d'éléments de type quelconque
+ *
+ * \copyright PASD
+ * \version 2017
+ */
 
-struct maillon{
-    void* val;
-    maillon suivant;
-    //maillon pere; REPRESENTANT
+typedef struct maillon_struct * maillon;
+
+typedef struct liste_struct * liste;
+
+struct maillon_struct {
+	void* val;
+	maillon suivant;
 };
 
-typedef struct liste * liste;
-
-struct liste{
-    maillon tete;
-    void* ( * copier ) ( void * val );
-	void ( * detruire ) ( void * * pt );
-	void ( * afficher ) (void* val);
+/*!
+ * la structure définit 3 champs supplémentaires qui sont des pointeurs sur fonction
+*/
+struct liste_struct {
+	maillon tete;
+	void ( *copier ) ( void * val , void ** pt );
+	void ( *afficher ) ( FILE * f , void * val );
+	void ( *detruire ) ( void ** pt);
+	int ( *comparer )(void* val1, void* val2);
 };
 
 
-//CHAINE
-maillon creer_maillon_vide();
+liste liste_creer (void (* _copie)(void* val, void** pt), void (* _afficher)(FILE* f, void * val), void (* _detruire)(void** pt),int ( *comparer )(void* val1, void* val2)) ;
 
-maillon maillon_creer(void* val,void* ( * copier ) ( void * val ));
+void liste_detruire (liste * l);
 
-void maillon_detruire(maillon* m,void ( * detruire ) ( void * * pt ));
+void liste_insertion_debut (liste l, void * val);
 
-void maillon_detruire_simple(maillon* m,void ( * detruire ) ( void * * pt ));
+void liste_insertion_fin (liste l, void * val);
 
-//LISTE
+maillon* liste_chercher_maillon(liste l ,void* val);
 
-liste creer_liste_vide();
+void liste_copier(maillon * m,liste l);
 
-liste creer_liste(void* ( * copier ) ( void * val ), void ( * detruire ) ( void * * pt ), void ( * afficher ) (void* val));
+void liste_concatener(liste l1,liste l2);
 
-int liste_a_tete(liste l);
+void liste_supprimer_maillon(liste l,void * val);
 
-maillon* liste_rechercher(liste l, void* val);
+void liste_affichage (FILE * f, liste l);
 
-liste* liste_inserer_maillon_fin(liste* l,void* val);
+unsigned int liste_taille (liste l);
 
-liste liste_inserer_maillon_debut(liste l,void* val);
+void* liste_valeur_tete (liste l);
 
-liste* liste_concatener(liste* a, liste* b);
-
-int liste_contient_maillon(liste l, maillon ch);
-
-liste* liste_supprimer_maillon(liste* l,void* val,void ( * detruire ) ( void * * pt ));
-
-liste liste_supprimer(liste* l,void ( * detruire ) ( void * * pt ));
-
-void afficher_liste_union(liste* l,char* fichier,void ( * afficher ) ( void * val , FILE * f ));
-
+bool liste_est_tete (liste l);
 
 #endif
-

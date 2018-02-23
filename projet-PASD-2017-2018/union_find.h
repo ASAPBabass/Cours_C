@@ -1,10 +1,9 @@
 #ifndef UNION_FIND_H
 #define UNION_FIND_H
 
-# include <stdio.h>
-# include <stdlib.h>
-# include <string.h>
-# include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "liste_simplement_chainee.h"
 /*! \file union_find.h
  * \brief Implémentation de la structure de données Union-Find.
  *
@@ -12,30 +11,26 @@
  * \copyright PASD
  * \version 2017
  */
-#include "liste_simplement_chainee.h"
 
 typedef struct ensemble * ensemble;
 
 struct ensemble{
-    liste elements;
-    long representant;
-    int rang;
+	liste elements;
+	int pere;
+	int rang;
+	int poidsMax;
 };
 
-liste creer_liste_ensemble_int(int taille);
+ensemble creer_ensemble(int a);
 
-ensemble creer_ensemble(int a, void ( * copier ) ( void * val ,void * * pt ), void ( * detruire ) ( void * * pt ), void ( * afficher ) (void* val));
+void copier_int ( void * val ,void * * pt ) ;
 
-void union_ensemble(liste* l,ensemble* e1, ensemble* e2);
+void detruire_int ( void * * pt ) ;
 
-int trouver_ensemble(liste l,int val);
+void afficher_int( FILE * f , void * val );
 
-ensemble copier_int(void* a);
+void union_ensemble(liste l,ensemble e1, ensemble e2);
 
-void afficher_int(void* a, FILE* f);
-
-void detruire_int(void** a);
-
-liste union_creation(char* fichier);
-
+ensemble trouver_ensemble(liste l,int val);
+    
 #endif

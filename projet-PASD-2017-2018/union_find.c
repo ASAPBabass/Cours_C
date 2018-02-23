@@ -6,98 +6,78 @@
 
 //IMPLEMENTATION DE LA LISTE CHAINEE
 
-ensemble copier_int(void* a){
-    ensemble p = malloc(sizeof(struct ensemble));
-    p->elements=creer_liste(copier_int,detruire_int,afficher_int);
-    liste_inserer_maillon_debut(p->elements,a);
-    p->representant=(long) p->elements->tete->val;
-    p->rang=0;
-    return p;
-}
-
-void afficher_int(void* a, FILE* f){
-    ensemble e = (ensemble) a;
-    maillon* m = &(e->elements->tete);
-    
-    while(NULL!=m){
-        fprintf(f,"%p",(*m)->val);
-    }
-
-}
-
-void detruire(void** a){
-    ensemble* e = (ensemble*) a;
-    liste_supprimer((*e)->elements,(*e)->elements->detruire);
-    free(e);
-    *e=NULL;
+void copier_int ( void * val ,void * * pt ) {
+	assert ( NULL != val ) ;
+  	assert ( NULL != pt ) ;
+  	* pt = ( int * ) malloc ( sizeof ( int ) ) ;
+  	assert ( NULL != * pt ) ;
+	memcpy ( * pt , val , sizeof ( int ) ) ;
 }
 
 
-liste creer_liste_ensemble_int(int taille){ // r est un MAILLON
-    liste l = creer_liste(copier_int,detruire_int,afficher_int);
-    for(int i=0;i<taille;i++){
-        liste_inserer_maillon_fin(l,creer_ensemble(i,l->copier,l->detruire,l->afficher));
-    }
-    return l;
+void detruire_int ( void * * pt ) {
+  	assert ( NULL != pt ) ;
+	if ( * pt != NULL ) {
+		free ( * pt ) ;
+	    	( * pt ) = NULL ;
+	}
 }
 
-ensemble creer_ensemble(int a, void ( * copier ) ( void * val ,void * * pt ), void ( * detruire ) ( void * * pt ), void ( * afficher ) (void* val)){
-    ensemble p = malloc(sizeof(struct ensemble));
-    p->elements=creer_liste(copier,detruire,afficher);
-    liste_inserer_maillon_debut(p->elements,a);
-    p->representant=p->elements->tete;
-    p->rang=0;
-    return p;
+void afficher_int(FILE* f, void* val){
+	assert ( NULL != val ) ;
+  	fprintf(f,"%d",*((int*)(val)));
 }
 
-void union_ensemble(liste* l,ensemble* e1, ensemble* e2){
+int comparer_int(void *  val1, void * val2 ){
+	assert ( NULL != val1 ) ;
+	assert ( NULL != val2 ) ;
+	return *((int*)(val1))=*((int*)(val2));
+	
+}
 
-    if((*e1)->rang > (*e2)->rang || (((*e1)->rang == (*e2)->rang) && ((*e1)->representant) > (*e2)->representant)){
-        liste_concatener(&((*e1)->elements),&((*e2)->elements));
-        (*e1)->rang++;
-        liste_supprimer_maillon(&l,e2,(*l)->detruire);
+ensemble creer_ensemble(int a){
+	ensemble e = malloc(sizeof(struct ensemble));
+	e->elements = liste_creer(&copier_int, &afficher_int, &detruire_int,&comparer_int);
+	liste_insertion_debut(e->elements,&a);
+    e->pere=a;
+	e->rang=0;
+	e->poidsMax=0;
+	return e;
+}
+
+void union_ensemble(liste l,ensemble e1, ensemble e2){
+	assert(e1!=NULL);
+	assert(e2!=NULL);
+	assert(l!=NULL);
+	if(e1->rang>e2->rang || (e1->rang==e2->rang && e1->pere>e2->pere)){
+        	liste_concatener(e1->elements,e2->elements);
+		e2->pere=e1->pere;
+        	liste_supprimer_maillon(l,e2);
+		e1->rang+=e2->rang;
     }else{
-        liste_concatener(&((*e2)->elements),&((*e1)->elements));
-        (*e2)->rang++;
-        liste_supprimer_maillon(&l,e1,(*l)->detruire);
+        	liste_concatener(e2->elements,e1->elements);
+		e1->pere=e2->pere;
+        	liste_supprimer_maillon(l,e1);
+		e2->rang+=e2->rang;
     }
+	
 }
 
-int trouver_ensemble(liste l,int val){
-    maillon* m=l->tete;
-    while((*m)!=NULL){
-        //on caste la valeur du maillon en un ensemble
-        ensemble* e =(ensemble*) &(*m)->val; 
-        for(int i=0;i<(*e)->rang;i++){
-            if(NULL!=liste_rechercher((*e)->elements,val)){
-                return (*e)->representant;
-            }
-        }
-        m=&((*m)->suivant);
-    }
-    printf("PAS TROUVER");
-    return NULL;
+int cherche_valeur(ensemble e, int val){
+	maillon* m=&(e->elements->tete);
+	while(NULL!=*m){
+		if(*(int*)((*m)->val)==val) return 1;
+		m=&((*m)->suivant);
+	}
+	return 0;
 }
 
-
-/*
-liste union_creation(char* fichier){
-    
-    FILE* input=fopen(fichier,"r");
-    fscanf(input,"%d",taille);
-    
-    liste l = creer_liste_vide(taille); //liste de taille sommets
-
-    while(input!=EOF){
-        fscanf(input,"%d %d %d",s1,s2,arete);
-        
-        
-
-    }
-
-    fclose(input);
-}*/
-
-
-
-//IMPLEMENTATION DE LA FORET
+ensemble trouver_ensemble(liste l,int val){
+    	maillon* m=&(l->tete);
+    	while(*m!=NULL){
+       		ensemble e=(ensemble) ((*m)->val);
+			if(cherche_valeur(e,val)==1) return e;
+      		m=&((*m)->suivant);
+		}
+		return NULL;
+}

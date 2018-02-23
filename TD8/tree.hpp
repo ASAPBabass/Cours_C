@@ -1,0 +1,235 @@
+# ifndef __TREE_HPP_
+# define __TREE_HPP_
+
+/*!
+ * \file 
+ * This module provides generic classes for unbouded trees.
+ *
+ * \author PASD
+ * \date 2016
+ */
+
+# include <stack>
+# include <ostream>
+
+# undef NDEBUG
+# include <assert.h>
+
+
+/*!
+ * Template to generate default for second parameter of \c Node and \c Tree.
+ * It does nothing.
+ */
+template < class T >
+void delete_not ( T & ) {}
+ 
+
+/*!
+ * This class encodes the nodes and their relative links.
+ * \param T Type for nodes.
+ * \param delete_T Fonction de suppression.
+ */
+template < class T ,
+	   void ( * delete_T ) ( T & ) = delete_not < T > >
+class Node {
+
+  /*! Value held. */
+  T value ;
+  /*! Link to the father.
+   * Father cannot be changed!
+   */
+  Node * const father ;
+  /*! Link to the leftmost son. */ 
+  Node * left_son ; 
+  /*! Link to the leftmost right brother. */ 
+  Node * right_brother ; 
+ 
+public :
+
+  /*!
+   * Constructor.
+   * A node must have a father, brothers and sons will come after.
+   * \param val value to hold.
+   * \param father link to the father node.
+   */
+  Node ( T val ,
+	 Node * father ) 
+    : value ( val ) 
+    , father ( father ) 
+    , left_son ( NULL ) 
+    , right_brother ( NULL ) 
+  {} ; 
+
+  /*!
+   * To get access to left son.
+   * It can be used on const Node.
+   * \return the value of \c left_son .
+   */
+  Node * get_left_son () const {
+    return left_son ; } 
+
+  /*!
+   * To get access to right_brother.
+   * It can be used on const Node.
+   * \return the value of \c right_brother .
+   */
+  Node * get_right_brother () const {
+    return right_brother ; } 
+
+  /*!
+   * To get access to the father.
+   * It can be used on const Node.
+   * \return the value of \c father .
+   */
+  Node * get_father () const {
+    return father ; } ; 
+
+  /*!
+   * To get access to the value of \c val.
+   * It can be used on const Node.
+   * \return the value of \c val .
+   */
+  T get_value () const {
+    return value ; } ; 
+
+  /*! To add a left_son (to the left of any other existing son).
+   * \param val Value for the added son.
+   * \return A pointer to the newly created \c Node.
+   */
+  Node * add_left_son ( T val ) { 
+    
+    if(NULL==this->left_son){
+      left_son=new Node(val,this->father);
+      //std::cout << "ajout" << std::endl;
+    	return left_son;
+  	}else{
+    	Node < T ,delete_T> * n =new Node(val,this->father);
+    	n->right_brother = left_son;
+      left_son=n;
+      //std::cout << "ajout2" << std::endl;
+    	return left_son;
+	  }
+  }  
+
+
+  /*! To add a brother to the right (to the left of any other existing son).
+   * \param val Value for the added brother.
+   * \return A pointer to the newly created \c Node.
+   */
+  Node * add_right_brother ( T val ) { 
+	  if(NULL==this->right_brother){
+    	right_brother=new Node(val,this->father);
+    	return right_brother;
+  	}else{
+  		Node < T ,delete_T> * n =new Node(val,this->father);
+    	n->right_brother = right_brother;
+		  right_brother=n;
+    	return right_brother;
+	  }
+  }
+ 
+  /*!
+   * Destructor.
+   */
+  ~ Node () { 
+  } ;
+ 
+} ; 
+
+
+
+/*!
+ * This class is to represent a tree.
+ * \param T Type for nodes.
+ * \param delete_T permet la suppression de manière générique.
+ */
+template < class T ,
+	   void ( * delete_T ) ( T & ) = delete_not < T > >
+class Tree {
+
+  /*
+   * Root note of the tree.
+   */
+  Node < T , delete_T > * root ; 
+
+public:
+
+  /*
+   * A tree is built from its root value.
+   * Otherwise it cannot be build.
+   * In particular, there is no empty tree.
+   * \val val Value for the root note.
+   */
+  Tree ( T const & val ) 
+    : root ( new Node< T , delete_T > ( val , NULL ) ) 
+  {} ;
+
+  /*!
+   * \return a pointer to the \c root Node.
+   */
+  Node < T , delete_T > * get_root () {
+    return root ; } ; 
+ 
+  /*!
+   * Const version.
+   * \return a pointer to the \c root Node.
+   */
+  Node < T , delete_T > const * get_root () const {
+    return root ; } ;
+
+  /*!
+   * Destructor.
+   */
+  ~ Tree () { 
+  }
+
+ 
+  template < char const * const open_sons ,
+	     char const * const sep_brothers ,
+	     char const * const close_sons >
+  std :: ostream & out_put ( std :: ostream & ost 
+			     ) ;
+} ; 
+
+
+
+/*
+ * ???
+ */
+template < class T ,
+	   void ( * delete_T ) ( T & ) >
+template < char const * const open_sons ,
+	   char const * const sep_brothers ,
+	   char const * const close_sons >
+std :: ostream & Tree < T , delete_T > :: out_put ( std :: ostream & ost ) {
+
+	std::stack < Node<T,delete_T>* > l;
+	Node <T,delete_T> * p =this->get_root();
+	while(NULL!=p){
+		ost << p->get_value();
+		if(NULL!=p->get_left_son() && NULL!=p->get_right_brother()){
+			ost << open_sons;
+			Node <T,delete_T> * p1=p->get_right_brother();
+			l.push(p1);
+			p=p->get_left_son();
+		}
+		else if(NULL!=p->get_left_son() && NULL==p->get_right_brother()){
+			ost << open_sons;
+			p=p->get_left_son();
+		}
+		else if(NULL==p->get_left_son() && NULL!=p->get_right_brother()){
+			ost << sep_brothers;
+			p=p->get_right_brother();
+		}
+		else if(0 < l.size()){
+			ost << close_sons;
+			ost << sep_brothers;
+			p=l.top();
+			l.pop();
+		}
+		else p=NULL;		
+	}
+	return ost << close_sons <<close_sons;	
+}
+
+# endif 

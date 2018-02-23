@@ -1,160 +1,177 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
 #include "liste_simplement_chainee.h"
-# include <stdio.h>
-# include <stdlib.h>
-# include <string.h>
-# include <assert.h>
+
+/*! \file listes_generiques.c
+ * \brief L'implémentation des fonctions
+ * Les définitions des fonctions sont identiques à celles de liste des entiers.
+ * Mais certaines nécessitent un paramètre supplémentaire la fonction copier 
+ * afficher ou detruire qui permettent de rendre générique la liste.
+ * Pour l'essentiel il s'agit de reprendre les fonctions pour les listes 
+ * d'entiers et de les adapter à la généricité .
+ *
+ * \copyright PASD
+ * \version 2017
+ */
 
 
-//CHAINE
-maillon creer_maillon_vide(){
-    maillon ch = malloc(sizeof(struct maillon));
-    ch->val=NULL;
-    ch->suivant=NULL;
-    return ch;
+static maillon maillon_creer(void * val, void(*copier)(void* val, void** pt)) {
+	maillon m=malloc(sizeof(struct maillon_struct));
+	copier(val,&(m->val));
+	m->suivant=NULL;
+	return m;
+	
 }
 
-maillon maillon_creer(void* val,void* ( * copier ) ( void * val )){
-    maillon ch = malloc(sizeof(struct maillon));
-    ch->val=copier(val);
-    ch->suivant=NULL;
-    return ch;
+static void maillon_detruire_simple(maillon* m, void(* detruire)(void** pt)) {
+	detruire(&((*m)->val));
+	free(*m);
+	*m=NULL;
 }
-/*
-void maillon_afficher(maillon* m,char* fichier, void ( * afficher ) (void* val)){
-    afficher()
+
+static void maillon_detruire(maillon* m, void(* detruire)(void** pt)) {
+	if((*m)->suivant==NULL){
+		detruire(&((*m)->val));
+		free(*m);
+		*m=NULL;
+	}
+	else maillon_detruire(&((*m)->suivant),detruire);
+}
+
+
+static void maillon_afficher(FILE* f, maillon m_debut, void(* afficher )(FILE *f, void* val)) {
+	maillon curseur=m_debut;
+	assert(NULL!=curseur);
+	while(curseur!=NULL){
+		afficher(f,curseur->val);
+		//fprintf(f,"\n");
+		curseur=curseur->suivant;
+	}
+	//fprintf(f,"\n");
+}
+
+static maillon maillon_precedent(liste l,maillon m){
+	maillon* m1=&(l->tete);
+	while(*m1!=NULL && m->suivant->val!=m->val){
+		m1=&((*m1)->suivant);
+	}
+	return *m1;
+}
+
+static void maillon_ajouter_avant( void* _val,maillon m, void(*copier)(void* val, void** pt)) {
+	maillon m_avant=maillon_creer(_val,copier);
+	m_avant->suivant=m;
+}
+
+
+/*static void maillon_ajouter_apres(maillon m, void * _val, void(*copier)(void* val, void** pt)) {
+	maillon m_apres=maillon_creer(_val,copier);
+	if(m->suivant==NULL) m->suivant=m_apres;
+	else{
+		m->suivant=m_apres;
+	}
 }*/
 
-void maillon_detruire(maillon* m,void ( * detruire ) ( void * * pt )){
-
-    maillon_supprimer(&((*m)->suivant),detruire);
-    detruire(&((*m)->val));
-    free(m);
-    *m=NULL;
+liste liste_creer(void(*_copier)(void* val, void** pt),void(*_afficher)(FILE *f, void* val),void(* _detruire )(void** pt),int(*_comparer)(void* val1, void* val2)) {
+	liste l=malloc(sizeof(struct liste_struct));
+	l->tete=NULL;
+	l->copier=_copier;
+	l->afficher=_afficher;
+	l->detruire=_detruire;
+	l->comparer=_comparer;
+	return l;
 }
 
-void maillon_detruire_simple(maillon* m,void ( * detruire ) ( void * * pt )){    
-        detruire(&((*m)->val));
-        free(m);
-        *m=NULL;
+
+void liste_detruire(liste* l){
+	 if (*l != NULL) {
+		maillon_detruire(&((*l)->tete),(*l)->detruire);
+	    	free(*l);
+	    	*l= NULL;
+ 	 }	
 }
 
-//LISTE
 
-liste creer_liste_vide(){
-    liste l = malloc(sizeof(struct liste));
-    l->tete=NULL;
-    l->taille=0;
+void liste_insertion_debut(liste l, void* val){
+	if(NULL==l->tete) l->tete=maillon_creer(val,l->copier);
+	else maillon_ajouter_avant(val,l->tete,l->copier);
+	
 }
 
-liste creer_liste(void* ( * copier ) ( void * val ), void ( * detruire ) ( void * * pt ), void ( * afficher ) (void* val, FILE * f)){
-    
-    liste l = malloc(sizeof(struct liste));
-    l->tete=NULL;
-    l->copier=copier;
-    l->afficher=afficher;
-    l->detruire=detruire;
-
-    return l;
+void liste_insertion_fin(liste l, void* val){
+	if(NULL==l->tete) l->tete=maillon_creer(val,l->copier);
+	else{
+		maillon* p=&(l->tete);
+		while(NULL!=(*p)->suivant){
+			p=&((*p)->suivant);
+		}
+		(*p)->suivant=maillon_creer(val,l->copier);
+	}
+	
 }
 
-int liste_a_tete(liste l){
-    if (l->tete!=NULL) return 1;
-    else return 0; 
+maillon* liste_chercher_maillon(liste l ,void* val){
+	maillon* curseur=&(l->tete);
+	while(NULL!=*curseur && (*curseur)->val!=val){
+		curseur=&((*curseur)->suivant);
+	}
+	return curseur;
 }
 
-maillon* liste_rechercher(liste l, void* val){
-
-    maillon *p=&(l->tete);
-    while(NULL!=p && (*p)->val!=val){
-        p=&((*p)->suivant);
-    }
-    return p;
+void liste_copier(maillon *m,liste l){
+	maillon* curseur=&(l->tete);
+	maillon* curseur1=m;
+	while(*curseur!=NULL){
+		*curseur1=maillon_creer((*curseur)->val,l->copier);
+		curseur=&((*curseur)->suivant);
+		curseur1=&((*curseur1)->suivant);
+		
+	}
 }
 
-liste* liste_inserer_maillon_fin(liste* l,void* val){
-
-    if(1==liste_a_tete(l)){
-        (*l)->tete=maillon_creer(val,(*l)->copier);
-    }else{
-        maillon* p=&((*l)->tete);
-        while(NULL!=(*p)->suivant){
-            p=(*p)->suivant;
-        }
-        p=maillon_creer(val,(*l)->copier);
-    }
-    return l;
+void liste_concatener(liste l1,liste l2){
+	assert(NULL!=l1);
+	assert(NULL!=l2);
+	maillon curseur=l1->tete;
+	while(curseur->suivant!=NULL){
+		curseur=curseur->suivant;
+	}
+	liste_copier(&(curseur->suivant),l2);
+	
 }
 
-liste liste_inserer_maillon_debut(liste l,void* val){
-    if(1==liste_a_tete(l)){
-        l->tete=maillon_creer(val,l->copier);
-    }else{
-        maillon m = maillon_creer(val,l->copier);
-        m->suivant=l->tete;
-        l->tete=m;
-    }
-    return l;
+void liste_supprimer_maillon(liste l,void * val){
+	if(l->tete->val==val){
+		maillon m=l->tete->suivant;
+		maillon_detruire_simple(&(l->tete),l->detruire);
+		l->tete=m;
+	}
+	else{
+		maillon*m=&(l->tete);
+		while(NULL!=(*m)->suivant){
+			if((*m)->suivant->val==val){
+				maillon m1=(*m)->suivant->suivant;
+				maillon_detruire_simple(&((*m)->suivant),l->detruire);
+				(*m)->suivant=m1;	
+			}
+			m=&((*m)->suivant);
+		}
+	}
 }
 
-liste* liste_concatener(liste* a, liste* b){
-    if((*a)->taille > (*b)->taille){
-        liste_inserer_maillon_fin(a,&((*b)->tete),(*a)->copier);
-        (*a)->taille+=(*b)->taille;
-        return a;
-    }else{
-        liste_inserer_maillon_fin(b,&((*a)->tete),(*a)->copier);
-        (*b)->taille+=(*a)->taille;
-        return b;
-    }
+void liste_affichage(FILE* f,liste l){
+	fprintf(f,"[");
+	maillon_afficher(f,l->tete,l->afficher);
+	fprintf(f,"]\n");
 }
 
-int liste_contient_maillon(liste l, maillon ch){
-    maillon* p = l->tete;
-    while(p!=NULL){
-        if(p->val==ch->val){
-            return 1; //VRAI
-        }
-        p=p->suivant;
-    }
-    return 0; //FAUX
+void * liste_valeur_tete(liste l){
+	return l->tete->val;
 }
 
-maillon* liste_acceder_maillon(liste l, void* val){
-    
+bool liste_est_tete(liste l){
+	return (l->tete==NULL);
 }
 
-liste* liste_supprimer_maillon(liste* l,void* val,void ( * detruire ) ( void * * pt )){
-    maillon* ptr = &((*l)->tete);
-    maillon* ptr2;
-    while(NULL!=ptr && (*ptr)->val!=val){
-        ptr2 = ptr;
-        ptr=(&((*l)->suivant));
-    }
-    if(ptr!=NULL{
-        (*ptr2)->suivant=(*ptr)->suivant;
-        maillon_detruire_simple(ptr,detruire);
-    }
-    return l;
-}
-
-liste liste_supprimer(liste* l,void ( * detruire ) ( void * * pt )){
-    maillon_supprimer(&(l->tete),detruire);
-    free(l);
-    *l=NULL;
-}
-
-void afficher_liste_union(liste* l,char* fichier,void ( * afficher ) ( void * val , FILE * f )){
-    FILE f = fopen(fichier);
-
-    maillon* m = &(l->tete);
-    while(m!=NULL){
-
-        maillon_afficher(m,fichier,afficher);
-        afficher((*m)->val->representant,f);
-        if(NULL!=(*m)->val->elements){
-            afficher((*m)->val->elements,f);
-        }
-        m=&((*m)->suivant);
-    }
-    f.close();
-}
